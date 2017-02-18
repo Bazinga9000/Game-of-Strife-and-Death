@@ -1,4 +1,4 @@
-import pygame,random,copy,time,operator
+import pygame,random,copy,time,operator,math,json
 pygame.init()
 surface = pygame.display.set_mode((1300,760))
 
@@ -23,6 +23,7 @@ b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','
 gridcreatures = ["No Creature","No Creature"]
 
 stats = ["No Creature","NaN","NaN","NaN","NaN"]
+
 
 def draw(gamemode):
     surface.fill((204, 204, 204))
@@ -54,7 +55,7 @@ def draw(gamemode):
                 color1 = 204 if creaturename == gridcreatures[0] else 0
                 color3 = 204 if creaturename == gridcreatures[1] else 0
 
-                name = smallfont.render(findname(creatures[i + j]), True, (color1, 0, color3))
+                name = smallfont.render(creaturename, True, (color1, 0, color3))
 
                 surface.blit(name,(170*i/10,(65 + 8 * squaresize) + (30*j)))
 
@@ -70,22 +71,18 @@ def draw(gamemode):
 
         generationtext = font.render(str("Viewing Generation " + str(archgen) + ", Latest is " + str(gen)),True,(0,0,0))
 
-        surface.blit(generationtext,(800,10))
+        surface.blit(generationtext,(820,720))
 
         if stats[0] != "No Creature":
-            stats0 = font.render(str("Creature " + stats[0]),True,(0,0,0))
-            stats1 = font.render(str("Created During Generation " + str(stats[1])), True, (0, 0, 0))
-            stats2 = font.render(str("Scored " + str(stats[2]) + " Points Last Generation"), True, (0, 0, 0))
-            stats3 = font.render(str("Amassed " + str(stats[3]) + " Population Last Generation"), True, (0, 0, 0))
-            stats4 = font.render(str("Scored " + str(stats[4]) + " Points over it's Lifespan"), True, (0, 0, 0))
-            stats5 = font.render(str("Amassed " + str(stats[5]) + " Population over it's Lifespan"), True, (0, 0, 0))
+            lines = ["Creature %s", "Created During Generation %s", "Scored %s Point(s) Last Generation",
+                     "Amassed %s Population Last Generation", "Scored %s Point(s) over All Time",
+                     "Amassed %s Population over All Time"]
 
-            surface.blit(stats0,(820,65))
-            surface.blit(stats1,(820,115))
-            surface.blit(stats2,(820,165))
-            surface.blit(stats3,(820,215))
-            surface.blit(stats4,(820,265))
-            surface.blit(stats5,(820,315))
+            for n, line in enumerate(lines):
+                img = font.render(line % stats[n], True, (0, 0, 0))
+                surface.blit(img, (820, 65 + 25 * n))
+
+
 
 def breed(mother,father):
     child = [[0 for i in range(8)] for i in range(8)]
@@ -361,7 +358,7 @@ def generation(drawf):
                 creatures[j][9] += 1
                 creatures[j][11] += 1
 
-            elif results[0] == 0:
+            elif results[0] == 0 and results[1] == [0,0]:
                 creatures[i][9] += 0.5
                 creatures[i][11] += 0.5
                 creatures[j][9] += 0.5
@@ -386,8 +383,8 @@ def generation(drawf):
     archive.append(creatures)
 
     for i in range(50):
-        value = random.randint(0,100)
-        if value <= 2*i:
+
+        if random.randint(0,100) <= 2*i:
             creatures[i].append(1)
         else:
             creatures[i].append(0)
@@ -402,15 +399,13 @@ def generation(drawf):
 
     length = len(creatures)
     while len(creatures) != 50:
-        i,j = random.randint(0,length-1),random.randint(0,length-1)
+        i,j = random.randint(1,length**2),random.randint(1,length**2)
+        i,j = int(math.sqrt(i))-1,int(math.sqrt(j))-1
         print("Breeding Creatures", i, "and", j)
         creatures.append(breed(creatures[i],creatures[j]))
 
     backupcreatures = copy.deepcopy(creatures)
 
-
-def getscores(creature):
-    return (-creature[9],-creature[10])
 
 
 while True:
@@ -474,6 +469,19 @@ while True:
                             creatures = copy.deepcopy(backupcreatures)
                         else:
                             creatures = copy.deepcopy(archive[archgen])
+
+                if key in range(48,57):
+                    with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
+                        json.dump([gen,archive,backupcreatures],savefile)
+                if key in range(282,290):
+                    with open(str("Save" + str(key - 281) + ".txt"), "r") as savefile:
+                        jsonlist = json.loads(savefile.read())
+                        gen = jsonlist[0]
+                        archgen = jsonlist[0]
+                        archive = jsonlist[1]
+                        backupcreatures = jsonlist[2]
+                        creatures = copy.deepcopy(backupcreatures)
+                        print(gen,archive,backupcreatures)
 
         elif currentlyinputting == 1:
             if key == 8:
