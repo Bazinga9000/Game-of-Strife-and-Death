@@ -9,10 +9,12 @@ font = pygame.font.SysFont("Trebuchet MS", 25)
 bigfont = pygame.font.SysFont("Trebuchet MS", 45)
 smallfont = pygame.font.SysFont("Trebuchet MS", 18)
 gen = 0
+archgen = 0
 currentlyinputting = 0
 inputstring = ""
 mod = 0
 archive = []
+backupcreatures = []
 
 b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',
        'S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
@@ -46,16 +48,13 @@ def draw(gamemode):
                 if i+j >= len(creatures):
                     break
 
-                name = smallfont.render(findname(creatures[i + j]), True, (0, 0, 0))
+                creaturename = findname(creatures[i + j])
 
-                if findname(creatures[i+j]) == gridcreatures[0] and gridcreatures[0] == gridcreatures[1]:
-                    name = smallfont.render(findname(creatures[i + j]), True, (204, 0, 204))
 
-                elif findname(creatures[i+j]) == gridcreatures[0]:
-                    name = smallfont.render(findname(creatures[i + j]), True, (204, 0, 0))
+                color1 = 204 if creaturename == gridcreatures[0] else 0
+                color3 = 204 if creaturename == gridcreatures[1] else 0
 
-                elif findname(creatures[i+j]) == gridcreatures[1]:
-                    name = smallfont.render(findname(creatures[i + j]), True, (0, 0, 204))
+                name = smallfont.render(findname(creatures[i + j]), True, (color1, 0, color3))
 
                 surface.blit(name,(170*i/10,(65 + 8 * squaresize) + (30*j)))
 
@@ -69,8 +68,9 @@ def draw(gamemode):
                 inputtext = font.render(str("Inputting Custom Blue Creature " + inputstring),True,(0,0,204))
             surface.blit(inputtext,(700,10))
 
-        generationtext = font.render(str("Generation " + str(gen)),True,(0,0,0))
-        surface.blit(generationtext,(1000,10))
+        generationtext = font.render(str("Viewing Generation " + str(archgen) + ", Latest is " + str(gen)),True,(0,0,0))
+
+        surface.blit(generationtext,(800,10))
 
         if stats[0] != "No Creature":
             stats0 = font.render(str("Creature " + stats[0]),True,(0,0,0))
@@ -93,12 +93,10 @@ def breed(mother,father):
     for i in range(4):
         child.append(0)
 
-    print(child)
 
     for i in range(8):
         for j in range(8):
 
-            print(i,j)
 
             if isinstance(child[i],int):
                 break
@@ -116,6 +114,8 @@ def breed(mother,father):
 
 
 def initialize(count):
+    global backupcreatures
+
     creatureslist = []
 
     for i in range(count):
@@ -125,6 +125,7 @@ def initialize(count):
 
         creatureslist.append(creature)
 
+    backupcreatures = copy.deepcopy(creatureslist)
     return creatureslist
 
 
@@ -292,7 +293,10 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
     if drawf in [1,2]:
         draw(gamemode)
         pygame.display.flip()
-        pygame.event.get()
+        event = pygame.event.poll()
+
+        if event.type == pygame.QUIT:
+            exit()
 
     prevgrid4 = copy.deepcopy(grid)
     prevgrid3 = copy.deepcopy(grid)
@@ -329,8 +333,13 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
     return [0,vitals]
 
 
-def generation(draw):
-    global grid,creatures,gen,gridcreatures
+def generation(drawf):
+    global grid,creatures,gen,gridcreatures,backupcreatures,archgen
+
+    creatures = copy.deepcopy(backupcreatures)
+    draw(gamemode)
+    pygame.display.flip()
+    archgen = gen
 
     for i in range(50):
         creatures[i][9] = 0
@@ -338,8 +347,11 @@ def generation(draw):
 
     for i in range(50):
         for j in range(i+1,50):
+
+            print("Battling Creatures", i, "and", j)
+
             gridcreatures = [findname(creatures[i]),findname(creatures[j])]
-            results = battle(raw(creatures[i]),raw(creatures[j]),draw,0)
+            results = battle(raw(creatures[i]),raw(creatures[j]),drawf,0)
 
             if results[0] == 1:
                 creatures[i][9] += 1
@@ -359,7 +371,6 @@ def generation(draw):
             creatures[i][12] += results[1][0]
             creatures[j][10] += results[1][1]
             creatures[j][12] += results[1][1]
-            print(creatures[i][10],creatures[i][12])
 
 
 
@@ -387,13 +398,15 @@ def generation(draw):
         del i[13]
 
     gen += 1
+    archgen += 1
 
     length = len(creatures)
     while len(creatures) != 50:
         i,j = random.randint(0,length-1),random.randint(0,length-1)
-        print("CREATURES",i,j)
+        print("Breeding Creatures", i, "and", j)
         creatures.append(breed(creatures[i],creatures[j]))
 
+    backupcreatures = copy.deepcopy(creatures)
 
 
 def getscores(creature):
@@ -448,6 +461,19 @@ while True:
 
                 if event.key == pygame.K_s:
                     generation(2)
+
+                if event.key == pygame.K_LEFT:
+                    if archgen != 0:
+                        archgen = archgen - 1
+                        creatures = copy.deepcopy(archive[archgen])
+
+                if event.key == pygame.K_RIGHT:
+                    if archgen != gen:
+                        archgen = archgen + 1
+                        if archgen == gen:
+                            creatures = copy.deepcopy(backupcreatures)
+                        else:
+                            creatures = copy.deepcopy(archive[archgen])
 
         elif currentlyinputting == 1:
             if key == 8:
