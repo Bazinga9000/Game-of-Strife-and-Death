@@ -93,6 +93,16 @@ def draw(gamemode):
                 surface.blit(img, (820, 250 + 25 * n))
 
 
+        lines = ["Left and Right - View other Generations","A - ASAP Generation","F - Fast Generation",
+                 "S - Slow Generation","B - Battle the 2 creatures on the grid","I - Do one Iteration",
+                 "Left/Right Control - Input Custom Creature Names","Escape - Clear Grid/Exit Custom Input",
+                 "1-9 - Save in Slot","F1-F9 - Load from Slot"]
+
+        for n,line in enumerate(lines):
+            ctrl = smallfont.render(line, True, (0,0,0))
+            surface.blit(ctrl, (820, 475 + 20 * n))
+
+
 def breed(mother,father):
     child = [[0 for i in range(8)] for i in range(8)]
     child.append(gen)
@@ -478,7 +488,7 @@ while True:
                 if key in range(48,57):
                     with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
                         json.dump([gen,archive,backupcreatures],savefile)
-                if key in range(282,290):
+                if key in range(282,291):
                     with open(str("Save" + str(key - 281) + ".txt"), "r") as savefile:
                         jsonlist = json.loads(savefile.read())
                         gen = jsonlist[0]
