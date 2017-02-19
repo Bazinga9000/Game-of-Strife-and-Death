@@ -23,6 +23,7 @@ b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','
 gridcreatures = ["No Creature","No Creature"]
 
 stats = ["No Creature","NaN","NaN","NaN","NaN"]
+stats2 = ["No Creature","NaN","NaN","NaN","NaN"]
 
 
 def draw(gamemode):
@@ -75,13 +76,21 @@ def draw(gamemode):
 
         if stats[0] != "No Creature":
             lines = ["Creature %s", "Created During Generation %s", "Scored %s Point(s) Last Generation",
-                     "Amassed %s Population Last Generation", "Scored %s Point(s) over All Time",
-                     "Amassed %s Population over All Time"]
+                     "Amassed %s Population Last Generation", "Scored %s Point(s) up to this Gen.",
+                     "Amassed %s Population up to this Gen."]
 
             for n, line in enumerate(lines):
-                img = font.render(line % stats[n], True, (0, 0, 0))
+                img = font.render(line % stats[n], True, (204, 0, 0))
                 surface.blit(img, (820, 65 + 25 * n))
 
+        if stats2[0] != "No Creature":
+            lines = ["Creature %s", "Created During Generation %s", "Scored %s Point(s) Last Generation",
+                     "Amassed %s Population Last Generation", "Scored %s Point(s) up to this Gen.",
+                     "Amassed %s Population up to this Gen."]
+
+            for n, line in enumerate(lines):
+                img = font.render(line % stats2[n], True, (0, 0, 204))
+                surface.blit(img, (820, 250 + 25 * n))
 
 
 def breed(mother,father):
@@ -372,13 +381,7 @@ def generation(drawf):
 
 
     creatures = sorted(creatures, key=operator.itemgetter(9,10))
-    '''
-                Gen - 8
-                Score LG
-                Pop LG
-                Score AT
-                Pop AT
-                '''
+
 
     archive.append(creatures)
 
@@ -404,6 +407,8 @@ def generation(drawf):
         print("Breeding Creatures", i, "and", j)
         creatures.append(breed(creatures[i],creatures[j]))
 
+    grid = [[0 for i in range(8)]for i in range(8)]
+    gridcreatures = ["No Creature","No Creature"]
     backupcreatures = copy.deepcopy(creatures)
 
 
@@ -546,7 +551,7 @@ while True:
 
                         nonraw = copy.deepcopy(creatures[(10 * tens + ones)])
 
-                        stats = [findname(nonraw), nonraw[8], nonraw[9], nonraw[10], nonraw[11], nonraw[12]]
+                        stats2 = [findname(nonraw), nonraw[8], nonraw[9], nonraw[10], nonraw[11], nonraw[12]]
 
 
                         gridcreatures[1] = findname(creaturetoview)
