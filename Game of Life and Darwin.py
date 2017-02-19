@@ -1,4 +1,6 @@
 import pygame,random,copy,time,operator,math,json
+
+from threading import Thread
 pygame.init()
 surface = pygame.display.set_mode((1300,760))
 
@@ -15,6 +17,8 @@ inputstring = ""
 mod = 0
 archive = []
 backupcreatures = []
+battlecount = 0
+
 
 b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',
        'S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
@@ -90,17 +94,18 @@ def draw(gamemode):
 
             for n, line in enumerate(lines):
                 img = font.render(line % stats2[n], True, (0, 0, 204))
-                surface.blit(img, (820, 250 + 25 * n))
+                surface.blit(img, (820, 225 + 25 * n))
 
 
         lines = ["Left and Right - View other Generations","A - ASAP Generation","F - Fast Generation",
                  "S - Slow Generation","B - Battle the 2 creatures on the grid","I - Do one Iteration",
                  "Left/Right Control - Input Custom Creature Names","Escape - Clear Grid/Exit Custom Input",
-                 "1-9 - Save in Slot","F1-F9 - Load from Slot"]
+                 "1-9 - Save in Slot","F1-F9 - Load from Slot","G - Sort by Generation Created","R - Sort by Rank",
+                 "P - Sort by Population", "O - Sort by overall Score", "U - Sort by overall Population"]
 
         for n,line in enumerate(lines):
             ctrl = smallfont.render(line, True, (0,0,0))
-            surface.blit(ctrl, (820, 475 + 20 * n))
+            surface.blit(ctrl, (820, 400 + 20 * n))
 
 
 def breed(mother,father):
@@ -252,8 +257,7 @@ def raw(creature):
     return rawcreature
 
 
-def iteration():
-    global grid
+def iteration(grid):
 
     newgrid = copy.deepcopy(grid)
 
@@ -287,7 +291,7 @@ def iteration():
     return newgrid
 
 
-def findcreatures():
+def findcreatures(grid):
 
     vitals = [0,0]
 
@@ -326,7 +330,7 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
         prevgrid3 = copy.deepcopy(prevgrid2)
         prevgrid2 = copy.deepcopy(prevgrid)
         prevgrid = copy.deepcopy(grid)
-        grid = iteration()
+        grid = iteration(grid)
 
         if grid in [prevgrid,prevgrid2,prevgrid3,prevgrid4]:
             break
@@ -336,7 +340,7 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
             pygame.display.flip()
 
         pygame.event.get()
-        vitals = findcreatures()
+        vitals = findcreatures(grid)
 
 
         if vitals[0] == 0 and vitals[1] != 0:
@@ -417,10 +421,127 @@ def generation(drawf):
         print("Breeding Creatures", i, "and", j)
         creatures.append(breed(creatures[i],creatures[j]))
 
-    grid = [[0 for i in range(8)]for i in range(8)]
+    print(len(creatures))
+    grid = [[0 for i in range(16)]for i in range(8)]
     gridcreatures = ["No Creature","No Creature"]
     backupcreatures = copy.deepcopy(creatures)
 
+
+def battleall(creature):
+
+    print("Battling", creature)
+
+    for i in range(creature+1, 50):
+        fastbattle(creature, i)
+
+
+    print("Done Battling", creature)
+
+
+
+def fastbattle(creaturea, creatureb):
+    global creatures, battlecount
+
+    battlecount += 1
+
+    if creaturea >= len(creatures):
+        print("A", creaturea, "b", creatureb, len(creatures))
+    if creatureb >= len(creatures):
+        print("a", creaturea, "B", creatureb, len(creatures))
+
+    grid = merge(raw(creatures[creaturea]), blueify(flip(raw(creatures[creatureb]))))
+
+    prevgrid4 = copy.deepcopy(grid)
+    prevgrid3 = copy.deepcopy(grid)
+    prevgrid2 = copy.deepcopy(grid)
+    prevgrid = copy.deepcopy(grid)
+
+    for i in range(500):
+
+        prevgrid4 = copy.deepcopy(prevgrid3)
+        prevgrid3 = copy.deepcopy(prevgrid2)
+        prevgrid2 = copy.deepcopy(prevgrid)
+        prevgrid = copy.deepcopy(grid)
+        grid = iteration(grid)
+
+        if grid in [prevgrid, prevgrid2, prevgrid3, prevgrid4]:
+            break
+
+        vitals = findcreatures(grid)
+
+        if vitals[0] == 0 and vitals[1] != 0:
+            creatures[creatureb][9] += 1
+            creatures[creatureb][11] += 1
+            break
+        elif vitals[0] != 0 and vitals[1] == 0:
+            creatures[creaturea][9] += 1
+            creatures[creaturea][11] += 1
+            break
+        elif vitals == [0, 0]:
+            creatures[creaturea][9] += 0.5
+            creatures[creaturea][11] += 0.5
+            creatures[creatureb][9] += 0.5
+            creatures[creatureb][11] += 0.5
+            break
+
+    creatures[creaturea][10] += vitals[0]
+    creatures[creaturea][12] += vitals[0]
+    creatures[creatureb][10] += vitals[1]
+    creatures[creatureb][12] += vitals[1]
+    return
+
+
+def asapgeneration():
+    global grid, creatures, gen, gridcreatures, backupcreatures, archgen
+
+    creatures = copy.deepcopy(backupcreatures)
+    draw(gamemode)
+    archgen = gen
+    pygame.display.flip()
+
+
+    for i in range(50):
+        creatures[i][9] = 0
+        creatures[i][10] = 0
+
+    threads = []
+
+    for i in range(50):
+        threads.append(Thread(target=battleall, args=[i]))
+        threads[i].start()
+
+    for t in threads:
+        t.join()
+
+
+    print(battlecount)
+
+    # here ends modification, all below this line is exactly the same as in the original
+    creatures = sorted(creatures, key=operator.itemgetter(9, 10))
+
+    archive.append(creatures)
+
+    for i in range(50):
+        if random.randint(0, 100) <= 2 * i:
+            creatures[i].append(1)
+        else:
+            creatures[i].append(0)
+
+    creatures = [item for item in creatures if item[13] == 1]
+
+    for i in creatures:
+        del i[13]
+
+    gen += 1
+    archgen += 1
+
+    length = len(creatures)
+    while len(creatures) != 50:
+        i, j = random.randint(1, length ** 2), random.randint(1, length ** 2)
+        i, j = int(math.sqrt(i)) - 1, int(math.sqrt(j)) - 1
+        creatures.append(breed(creatures[i], creatures[j]))
+
+    backupcreatures = copy.deepcopy(creatures)
 
 
 while True:
@@ -458,13 +579,13 @@ while True:
                     currentlyinputting = 2
 
                 if event.key == pygame.K_i:
-                    grid = iteration()
+                    grid = iteration(grid)
 
                 if event.key == pygame.K_b:
                     battle(nametocreature(gridcreatures[0]),nametocreature(gridcreatures[1]),2)
 
                 if event.key == pygame.K_a:
-                    generation(0)
+                    asapgeneration()
 
                 if event.key == pygame.K_f:
                     generation(1)
@@ -497,6 +618,22 @@ while True:
                         backupcreatures = jsonlist[2]
                         creatures = copy.deepcopy(backupcreatures)
                         print(gen,archive,backupcreatures)
+
+
+                if event.key == pygame.K_g:
+                    creatures = sorted(creatures, key=operator.itemgetter(8, 9, 10))
+
+                if event.key == pygame.K_r:
+                    creatures = sorted(creatures, key=operator.itemgetter(9, 10))
+
+                if event.key == pygame.K_p:
+                    creatures = sorted(creatures, key=operator.itemgetter(10, 9))
+
+                if event.key == pygame.K_o:
+                    creatures = sorted(creatures, key=operator.itemgetter(11, 12))
+
+                if event.key == pygame.K_u:
+                    creatures = sorted(creatures, key=operator.itemgetter(12, 11))
 
         elif currentlyinputting == 1:
             if key == 8:
