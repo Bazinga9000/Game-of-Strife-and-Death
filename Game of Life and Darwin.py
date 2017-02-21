@@ -1,4 +1,4 @@
-import pygame,random,copy,time,operator,math,json
+import pygame,random,copy,time,operator,math,json,datetime
 
 from threading import Thread
 pygame.init()
@@ -39,9 +39,10 @@ def draw(gamemode):
     if gamemode == 0:
         title = bigfont.render("Game of Strife and Death",True,(0,0,0))
         text = font.render("It appears you don't have any creatures yet! Press SPACE to generate 50 random creatures!",True,(0,0,0))
+        notice = font.render("Make sure you've read the README file so you understand how you do things!",True,(204,0,0))
         surface.blit(title,(350,50))
         surface.blit(text,(75,300))
-
+        surface.blit(notice,(160,500))
     if gamemode == 1:
         for x in range(16):
             for y in range(8):
@@ -286,7 +287,7 @@ def iteration(grid):
             neighbors = getneighbors(row,col,rulestring[3])
 
             for i in neighbors:
-                if i[1] not in [-1,8] and i[0] not in [-1,16]:
+                if i[1] in range(0,8) and i[0] in range(0,16):
                     cellvalue = grid[i[1]][i[0]]
                     cellcount[cellvalue] = cellcount[cellvalue] + 1
 
@@ -638,7 +639,7 @@ while True:
                 if event.key == pygame.K_LALT:
                     currentlyinputting = 3
 
-                if key in range(48,57):
+                if key in range(48,58):
                     with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
                         json.dump([gen,archive,backupcreatures,rulestring],savefile)
                 if key in range(282,291):
@@ -704,7 +705,7 @@ while True:
                 inputstring = inputstring + chr(key+mod)
 
         elif currentlyinputting == 3:
-            if key in range(48, 57):
+            if key in range(48, 58):
                 inputstring = inputstring + str(key-48)
             if key == 47:
                 inputstring = inputstring + "/"
@@ -712,22 +713,26 @@ while True:
                 inputstring = inputstring[0:-1]
             if key == 13:
                 rulestringl = inputstring.split("/")
+                print(rulestringl)
                 newstring = [[],[],0,0]
                 for i in rulestringl[0]:
                     newstring[0].append(int(i))
                 for i in rulestringl[1]:
                     newstring[1].append(int(i))
-                if len(rulestringl) > 2:
-                    if rulestringl[2] in ["0","1"]:
-                        newstring.append(int(rulestringl[2]))
-                    if rulestringl[3] in ["0","1","2","3"]:
-                        newstring.append(int(rulestringl[2]))
+                if rulestringl[2] in ['0','1']:
+                        newstring[2] = int(rulestringl[2])
+                if rulestringl[3] in ["0","1","2","3"]:
+                        newstring[3] = int(rulestringl[3])
 
                 newstring[0] = sorted(set(newstring[0]))
                 newstring[1] = sorted(set(newstring[1]))
-
-                with open(str("Autosave (Rulestring Changed).txt"), "w") as savefile:
-                    json.dump([gen, archive, backupcreatures, rulestring], savefile)
+                print(newstring)
+                now = datetime.datetime.now()
+                now = str(now)
+                now = now.replace(":",";")
+                if archive != []:
+                    with open(str("Autosave " + now + ".txt"), "w") as savefile:
+                        json.dump([gen, archive, backupcreatures, rulestring], savefile)
 
                 rulestring = newstring[:]
                 inputstring = ""
