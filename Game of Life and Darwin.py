@@ -5,7 +5,7 @@ pygame.init()
 surface = pygame.display.set_mode((1300,760))
 
 grid = [[0 for i in range(16)] for j in range(8)]
-gridtocol = {0 : (255,255,255), 1 : (204,0,0), 2 : (0,0,204)}
+gridtocol = {0 : (255,255,255), 1 : (204,0,0), 2 : (0,0,204), 3 : (100,100,100), 4 : (204,0,204)}
 gamemode = 0
 font = pygame.font.SysFont("Trebuchet MS", 25)
 bigfont = pygame.font.SysFont("Trebuchet MS", 45)
@@ -18,7 +18,7 @@ mod = 0
 archive = []
 backupcreatures = []
 battlecount = 0
-
+rulestring = [[3],[2,3],0,0]
 
 b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',
        'S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
@@ -65,13 +65,17 @@ def draw(gamemode):
                 surface.blit(name,(170*i/10,(65 + 8 * squaresize) + (30*j)))
 
         currentlyviewing = font.render(str("Red Creature: " + gridcreatures[0] + " | Blue Creature: " + gridcreatures[1]),True,(0,0,0))
-        surface.blit(currentlyviewing,(10,10))
+        surface.blit(currentlyviewing,(10,5))
+        rulestringt = font.render(str("Rulestring: " + str(rulestring)),True,(0,0,0))
+        surface.blit(rulestringt,(10,30))
 
         if currentlyinputting != 0:
             if currentlyinputting == 1:
                 inputtext = font.render(str("Inputting Custom Red Creature " + inputstring),True,(204,0,0))
             if currentlyinputting == 2:
                 inputtext = font.render(str("Inputting Custom Blue Creature " + inputstring),True,(0,0,204))
+            if currentlyinputting == 3:
+                inputtext = font.render(str("Inputting Custom Rulestring " + inputstring),True,(0,204,0))
             surface.blit(inputtext,(700,10))
 
         generationtext = font.render(str("Viewing Generation " + str(archgen) + ", Latest is " + str(gen)),True,(0,0,0))
@@ -99,14 +103,29 @@ def draw(gamemode):
 
         lines = ["Left and Right - View other Generations","A - ASAP Generation","F - Fast Generation",
                  "S - Slow Generation","B - Battle the 2 creatures on the grid","I - Do one Iteration",
-                 "Left/Right Control - Input Custom Creature Names","Escape - Clear Grid/Exit Custom Input",
-                 "1-9 - Save in Slot","F1-F9 - Load from Slot","G - Sort by Generation Created","R - Sort by Rank",
-                 "P - Sort by Population", "O - Sort by overall Score", "U - Sort by overall Population"]
+                 "Left/Right Control - Input Custom Creature Names","Left Alt: Input Custom Rulestring",
+                 "Escape - Clear Grid/Exit Custom Input","1-9 - Save in Slot","F1-F9 - Load from Slot",
+                 "G - Sort by Generation Created","R - Sort by Rank","P - Sort by Population",
+                 "O - Sort by overall Score", "U - Sort by overall Population"]
 
         for n,line in enumerate(lines):
             ctrl = smallfont.render(line, True, (0,0,0))
-            surface.blit(ctrl, (820, 400 + 20 * n))
+            surface.blit(ctrl, (820, 450 + 15 * n))
 
+
+
+
+def getneighbors(row,col,indx):
+    neighborhoods = [
+        [[row + 1, col], [row + 1, col + 1], [row + 1, col - 1], [row, col + 1], [row, col - 1], [row - 1, col - 1],
+         [row - 1, col], [row - 1, col + 1]],
+        [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col]],
+        [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col], [row + 2, col], [row, col + 2], [row, col - 2],
+         [row - 2, col]],
+        [[row + 1, col + 2], [row + 1, col - 2], [row + 2, col - 1], [row + 2, col + 1], [row - 1, col + 2],
+         [row - 1, col - 2], [row - 2, col + 1], [row - 2, col - 1]]]
+
+    return neighborhoods[indx]
 
 def breed(mother,father):
     child = [[0 for i in range(8)] for i in range(8)]
@@ -263,29 +282,33 @@ def iteration(grid):
 
     for row in range(16):
         for col in range(8):
-            cellcount = [0,0,0]
-            neighbors = [[row+1,col],
-                         [row+1,col+1],
-                         [row+1,col-1],
-                         [row,col+1],
-                         [row,col-1],
-                         [row-1,col-1],
-                         [row-1,col],
-                         [row-1,col+1]]
-
-
+            cellcount = [0,0,0,0,0]
+            neighbors = getneighbors(row,col,rulestring[3])
 
             for i in neighbors:
                 if i[1] not in [-1,8] and i[0] not in [-1,16]:
                     cellvalue = grid[i[1]][i[0]]
                     cellcount[cellvalue] = cellcount[cellvalue] + 1
 
-            if newgrid[col][row] == 0 and cellcount[1] + cellcount[2] == 3:
-                if cellcount[1] > cellcount[2]:
-                    newgrid[col][row] = 1
+            if newgrid[col][row] == 0 and cellcount[1] + cellcount[2] + cellcount[3] + cellcount[4] in rulestring[0]:
+
+                maximum = []
+                for i in range(1,5):
+                    if cellcount[i] == max(cellcount[1],cellcount[2],cellcount[3],cellcount[4]):
+                        maximum.append(i)
+
+                if len(maximum) == 0:
+                    pass
+                elif len(maximum) == 1:
+                    newgrid[col][row] = maximum[0]
                 else:
-                    newgrid[col][row] = 2
-            if newgrid[col][row] != 0 and cellcount[1] + cellcount[2] not in [2,3]:
+                    if rulestring[2] == 0:
+                        newgrid[col][row] = 3
+                    else:
+                        newgrid[col][row] = 4
+
+
+            if newgrid[col][row] != 0 and cellcount[1] + cellcount[2] + cellcount[3] + cellcount[4] not in rulestring[1]:
                 newgrid[col][row] = 0
 
     return newgrid
@@ -297,9 +320,9 @@ def findcreatures(grid):
 
     for i in grid:
         for j in i:
-            if j == 1:
+            if j == 1 or j == 4:
                 vitals[0] += 1
-            if j == 2:
+            if j == 2 or j == 4:
                 vitals[1] += 1
 
     return vitals
@@ -313,10 +336,9 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
     if drawf in [1,2]:
         draw(gamemode)
         pygame.display.flip()
-        event = pygame.event.poll()
 
-        if event.type == pygame.QUIT:
-            exit()
+
+
 
     prevgrid4 = copy.deepcopy(grid)
     prevgrid3 = copy.deepcopy(grid)
@@ -324,6 +346,10 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
     prevgrid = copy.deepcopy(grid)
 
     for i in range(500):
+        event = pygame.event.poll()
+        if event.type == pygame.QUIT:
+            exit()
+
         time.sleep(wait)
 
         prevgrid4 = copy.deepcopy(prevgrid3)
@@ -339,7 +365,6 @@ def battle(creaturea,creatureb,drawf,wait=0.5):
             draw(gamemode)
             pygame.display.flip()
 
-        pygame.event.get()
         vitals = findcreatures(grid)
 
 
@@ -418,7 +443,7 @@ def generation(drawf):
     while len(creatures) != 50:
         i,j = random.randint(1,length**2),random.randint(1,length**2)
         i,j = int(math.sqrt(i))-1,int(math.sqrt(j))-1
-        print("Breeding Creatures", i, "and", j)
+        print("Breeding Creatures", str(i) + "/" + str(length), "and", str(j) + "/" + str(length))
         creatures.append(breed(creatures[i],creatures[j]))
 
     print(len(creatures))
@@ -457,7 +482,9 @@ def fastbattle(creaturea, creatureb):
     prevgrid = copy.deepcopy(grid)
 
     for i in range(500):
-
+        event = pygame.event.poll()
+        if event.type == pygame.QUIT:
+            exit()
         prevgrid4 = copy.deepcopy(prevgrid3)
         prevgrid3 = copy.deepcopy(prevgrid2)
         prevgrid2 = copy.deepcopy(prevgrid)
@@ -539,6 +566,7 @@ def asapgeneration():
     while len(creatures) != 50:
         i, j = random.randint(1, length ** 2), random.randint(1, length ** 2)
         i, j = int(math.sqrt(i)) - 1, int(math.sqrt(j)) - 1
+        print("Breeding Creatures", str(i) + "/" + str(length), "and", str(j) + "/" + str(length))
         creatures.append(breed(creatures[i], creatures[j]))
 
     backupcreatures = copy.deepcopy(creatures)
@@ -564,6 +592,7 @@ while True:
             currentlyinputting = 0
             gridcreatures = ["No Creature", "No Creature"]
             inputstring = ""
+            rulestring = [[3],[2,3],0,0]
 
         if currentlyinputting == 0:
 
@@ -606,9 +635,12 @@ while True:
                         else:
                             creatures = copy.deepcopy(archive[archgen])
 
+                if event.key == pygame.K_LALT:
+                    currentlyinputting = 3
+
                 if key in range(48,57):
                     with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
-                        json.dump([gen,archive,backupcreatures],savefile)
+                        json.dump([gen,archive,backupcreatures,rulestring],savefile)
                 if key in range(282,291):
                     with open(str("Save" + str(key - 281) + ".txt"), "r") as savefile:
                         jsonlist = json.loads(savefile.read())
@@ -617,7 +649,8 @@ while True:
                         archive = jsonlist[1]
                         backupcreatures = jsonlist[2]
                         creatures = copy.deepcopy(backupcreatures)
-                        print(gen,archive,backupcreatures)
+                        rulestring = jsonlist[3]
+                        print(gen,archive,backupcreatures,rulestring)
 
 
                 if event.key == pygame.K_g:
@@ -670,7 +703,35 @@ while True:
 
                 inputstring = inputstring + chr(key+mod)
 
+        elif currentlyinputting == 3:
+            if key in range(48, 57):
+                inputstring = inputstring + str(key-48)
+            if key == 47:
+                inputstring = inputstring + "/"
+            if key == 8:
+                inputstring = inputstring[0:-1]
+            if key == 13:
+                rulestringl = inputstring.split("/")
+                newstring = [[],[],0,0]
+                for i in rulestringl[0]:
+                    newstring[0].append(int(i))
+                for i in rulestringl[1]:
+                    newstring[1].append(int(i))
+                if len(rulestringl) > 2:
+                    if rulestringl[2] in ["0","1"]:
+                        newstring.append(int(rulestringl[2]))
+                    if rulestringl[3] in ["0","1","2","3"]:
+                        newstring.append(int(rulestringl[2]))
 
+                newstring[0] = sorted(set(newstring[0]))
+                newstring[1] = sorted(set(newstring[1]))
+
+                with open(str("Autosave (Rulestring Changed).txt"), "w") as savefile:
+                    json.dump([gen, archive, backupcreatures, rulestring], savefile)
+
+                rulestring = newstring[:]
+                inputstring = ""
+                currentlyinputting = 0
 
     if event.type == pygame.MOUSEBUTTONDOWN:
         pos = pygame.mouse.get_pos()
