@@ -11,21 +11,37 @@ evolving game of life and death
 # Controls (Shown in-game):
 
 Left and Right - View other Generations
+
 A - ASAP Generation
+
 F - Fast Generation
+
 S - Slow Generation
+
 B - Battle the 2 creatures on the grid
+
 I - Do one Iteration
+
 Left/Right Control - Input Custom Creature Names
+
 Left Alt: Input Custom Rulestring
+
 Escape - Clear Grid/Exit Custom Input
+
 1-9 - Save in Slot
+
 F1-F9 - Load from Slot
+
 G - Sort by Generation Created
+
 R - Sort by Rank
+
 P - Sort by Population
+
 O - Sort by overall Score
+
 U - Sort by overall Population
+
 
 # Custom Rulestrings:
 
