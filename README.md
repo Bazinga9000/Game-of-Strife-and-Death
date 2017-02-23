@@ -42,6 +42,7 @@ O - Sort by overall Score
 
 U - Sort by overall Population
 
+W - Warp to Generation
 
 # Custom Rulestrings:
 
