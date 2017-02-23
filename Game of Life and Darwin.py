@@ -117,16 +117,20 @@ def draw(gamemode):
 
 
 def getneighbors(row,col,indx):
-    neighborhoods = [
-        [[row + 1, col], [row + 1, col + 1], [row + 1, col - 1], [row, col + 1], [row, col - 1], [row - 1, col - 1],
-         [row - 1, col], [row - 1, col + 1]],
-        [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col]],
-        [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col], [row + 2, col], [row, col + 2], [row, col - 2],
-         [row - 2, col]],
-        [[row + 1, col + 2], [row + 1, col - 2], [row + 2, col - 1], [row + 2, col + 1], [row - 1, col + 2],
-         [row - 1, col - 2], [row - 2, col + 1], [row - 2, col - 1]]]
+    if indx == 0:
+        return [[row + 1, col], [row + 1, col + 1], [row + 1, col - 1], [row, col + 1], [row, col - 1], [row - 1, col - 1],
+         [row - 1, col], [row - 1, col + 1]]
+    elif indx == 1:
+        return [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col]]
+    elif indx == 2:
+        return [[row + 1, col], [row, col + 1], [row, col - 1], [row - 1, col], [row + 2, col], [row, col + 2], [row, col - 2],
+         [row - 2, col]]
+    elif indx == 3:
+        return [[row + 1, col + 2], [row + 1, col - 2], [row + 2, col - 1], [row + 2, col + 1], [row - 1, col + 2],
+         [row - 1, col - 2], [row - 2, col + 1], [row - 2, col - 1]]
 
     return neighborhoods[indx]
+
 
 def breed(mother,father):
     child = [[0 for i in range(8)] for i in range(8)]
@@ -464,16 +468,8 @@ def battleall(creature):
     print("Done Battling", creature)
 
 
-
 def fastbattle(creaturea, creatureb):
-    global creatures, battlecount
-
-    battlecount += 1
-
-    if creaturea >= len(creatures):
-        print("A", creaturea, "b", creatureb, len(creatures))
-    if creatureb >= len(creatures):
-        print("a", creaturea, "B", creatureb, len(creatures))
+    global creatures
 
     grid = merge(raw(creatures[creaturea]), blueify(flip(raw(creatures[creatureb]))))
 
@@ -542,8 +538,6 @@ def asapgeneration():
         t.join()
 
 
-    print(battlecount)
-
     # here ends modification, all below this line is exactly the same as in the original
     creatures = sorted(creatures, key=operator.itemgetter(9, 10))
 
@@ -557,8 +551,7 @@ def asapgeneration():
 
     creatures = [item for item in creatures if item[13] == 1]
 
-    for i in creatures:
-        del i[13]
+    creatures = [i[:-1] for i in creatures]
 
     gen += 1
     archgen += 1
