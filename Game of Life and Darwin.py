@@ -77,6 +77,8 @@ def draw(gamemode):
                 inputtext = font.render(str("Inputting Custom Blue Creature " + inputstring),True,(0,0,204))
             if currentlyinputting == 3:
                 inputtext = font.render(str("Inputting Custom Rulestring " + inputstring),True,(0,204,0))
+            if currentlyinputting == 4:
+                inputtext = font.render(str("Warping to Generation " + inputstring),True,(204,109,0))
             surface.blit(inputtext,(700,10))
 
         generationtext = font.render(str("Viewing Generation " + str(archgen) + ", Latest is " + str(gen)),True,(0,0,0))
@@ -107,7 +109,7 @@ def draw(gamemode):
                  "Left/Right Control - Input Custom Creature Names","Left Alt: Input Custom Rulestring",
                  "Escape - Clear Grid/Exit Custom Input","1-9 - Save in Slot","F1-F9 - Load from Slot",
                  "G - Sort by Generation Created","R - Sort by Rank","P - Sort by Population",
-                 "O - Sort by overall Score", "U - Sort by overall Population"]
+                 "O - Sort by overall Score", "U - Sort by overall Population","W - Warp to Generation"]
 
         for n,line in enumerate(lines):
             ctrl = smallfont.render(line, True, (0,0,0))
@@ -632,6 +634,9 @@ while True:
                 if event.key == pygame.K_LALT:
                     currentlyinputting = 3
 
+                if event.key == pygame.K_w:
+                    currentlyinputting = 4
+
                 if key in range(48,58):
                     with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
                         json.dump([gen,archive,backupcreatures,rulestring],savefile)
@@ -730,6 +735,23 @@ while True:
                 rulestring = newstring[:]
                 inputstring = ""
                 currentlyinputting = 0
+
+        elif currentlyinputting == 4:
+            if key in range(48, 58) and int(inputstring + str(key-48)) <= gen:
+                inputstring = inputstring + str(key - 48)
+
+
+            if key == 8:
+                inputstring = inputstring[0:-1]
+
+            if key == 13:
+                archgen = int(inputstring)
+                if archgen == gen:
+                    creatures = copy.deepcopy(backupcreatures)
+                else:
+                    creatures = copy.deepcopy(archive[archgen])
+                currentlyinputting = 0
+                inputstring = ""
 
     if event.type == pygame.MOUSEBUTTONDOWN:
         pos = pygame.mouse.get_pos()
