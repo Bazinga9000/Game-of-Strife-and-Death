@@ -279,7 +279,7 @@ def raw(creature):
 
 def iteration(grid):
 
-    newgrid = copy.deepcopy(grid)
+    newgrid = [[0 for i in range(16)] for j in range(8)]
 
     for row in range(16):
         for col in range(8):
@@ -287,30 +287,30 @@ def iteration(grid):
             neighbors = getneighbors(row,col,rulestring[3])
 
             for i in neighbors:
-                if i[1] in range(0,8) and i[0] in range(0,16):
+                try:
                     cellvalue = grid[i[1]][i[0]]
                     cellcount[cellvalue] = cellcount[cellvalue] + 1
-
-            if newgrid[col][row] == 0 and cellcount[1] + cellcount[2] + cellcount[3] + cellcount[4] in rulestring[0]:
-
-                maximum = []
-                for i in range(1,5):
-                    if cellcount[i] == max(cellcount[1],cellcount[2],cellcount[3],cellcount[4]):
-                        maximum.append(i)
-
-                if len(maximum) == 0:
+                except:
                     pass
-                elif len(maximum) == 1:
-                    newgrid[col][row] = maximum[0]
+
+            if grid[col][row] == 0 and sum(cellcount)-cellcount[0] in rulestring[0]:
+                max_value = max(cellcount[1:])
+
+                max_index = cellcount[1:].index(max_value)
+
+                if cellcount[1:].count(max_value) == 1:
+                    newgrid[col][row] = max_index+1
+
                 else:
                     if rulestring[2] == 0:
                         newgrid[col][row] = 3
+
                     else:
                         newgrid[col][row] = 4
 
 
-            if newgrid[col][row] != 0 and cellcount[1] + cellcount[2] + cellcount[3] + cellcount[4] not in rulestring[1]:
-                newgrid[col][row] = 0
+            if grid[col][row] != 0 and sum(cellcount)-cellcount[0] in rulestring[1]:
+                newgrid[col][row] = grid[col][row]
 
     return newgrid
 
@@ -477,19 +477,19 @@ def fastbattle(creaturea, creatureb):
 
     grid = merge(raw(creatures[creaturea]), blueify(flip(raw(creatures[creatureb]))))
 
-    prevgrid4 = copy.deepcopy(grid)
-    prevgrid3 = copy.deepcopy(grid)
-    prevgrid2 = copy.deepcopy(grid)
-    prevgrid = copy.deepcopy(grid)
+    prevgrid4 = grid[:]
+    prevgrid3 = grid[:]
+    prevgrid2 = grid[:]
+    prevgrid = grid[:]
 
     for i in range(500):
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             exit()
-        prevgrid4 = copy.deepcopy(prevgrid3)
-        prevgrid3 = copy.deepcopy(prevgrid2)
-        prevgrid2 = copy.deepcopy(prevgrid)
-        prevgrid = copy.deepcopy(grid)
+        prevgrid4 = prevgrid3[:]
+        prevgrid3 = prevgrid2[:]
+        prevgrid2 = prevgrid[:]
+        prevgrid = grid[:]
         grid = iteration(grid)
 
         if grid in [prevgrid, prevgrid2, prevgrid3, prevgrid4]:
