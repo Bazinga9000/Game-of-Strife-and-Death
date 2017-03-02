@@ -1,34 +1,38 @@
-import pygame,random,copy,time,operator,math,json,datetime
-
+import pygame,random,copy,time,operator,math,json,datetime,multiprocessing
 from threading import Thread
-pygame.init()
-surface = pygame.display.set_mode((1300,760))
 
-grid = [[0 for i in range(16)] for j in range(8)]
-gridtocol = {0 : (255,255,255), 1 : (204,0,0), 2 : (0,0,204), 3 : (100,100,100), 4 : (204,0,204)}
-gamemode = 0
-font = pygame.font.SysFont("Trebuchet MS", 25)
-bigfont = pygame.font.SysFont("Trebuchet MS", 45)
-smallfont = pygame.font.SysFont("Trebuchet MS", 18)
-gen = 0
-archgen = 0
-currentlyinputting = 0
-inputstring = ""
-mod = 0
-archive = []
-backupcreatures = []
-battlecount = 0
-rulestring = [[3],[2,3],0,0]
 
-b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',
-       'S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
-       'u','v','w','x','y','z','-','=']
 
-gridcreatures = ["No Creature","No Creature"]
+if __name__ == "__main__":
+    pygame.init()
+    surface = pygame.display.set_mode((1300,760))
 
-stats = ["No Creature","NaN","NaN","NaN","NaN"]
-stats2 = ["No Creature","NaN","NaN","NaN","NaN"]
+    grid = [[0 for i in range(16)] for j in range(8)]
+    gridtocol = {0 : (255,255,255), 1 : (204,0,0), 2 : (0,0,204), 3 : (100,100,100), 4 : (204,0,204)}
+    gamemode = 0
+    font = pygame.font.SysFont("Trebuchet MS", 25)
+    bigfont = pygame.font.SysFont("Trebuchet MS", 45)
+    smallfont = pygame.font.SysFont("Trebuchet MS", 18)
+    gen = 0
+    archgen = 0
+    currentlyinputting = 0
+    inputstring = ""
+    mod = 0
+    archive = []
+    backupcreatures = []
+    battlecount = 0
+    rulestring = [[3],[2,3],0,0]
 
+    b64 = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',
+           'S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
+           'u','v','w','x','y','z','-','=']
+
+    gridcreatures = ["No Creature","No Creature"]
+
+    stats = ["No Creature","NaN","NaN","NaN","NaN"]
+    stats2 = ["No Creature","NaN","NaN","NaN","NaN"]
+
+    shift = 0
 
 def draw(gamemode):
     surface.fill((204, 204, 204))
@@ -484,14 +488,18 @@ def fastbattle(creaturea, creatureb):
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             exit()
+
         prevgrid4 = prevgrid3[:]
         prevgrid3 = prevgrid2[:]
         prevgrid2 = prevgrid[:]
         prevgrid = grid[:]
+
         grid = iteration(grid)
+
 
         if grid in [prevgrid, prevgrid2, prevgrid3, prevgrid4]:
             break
+
 
         vitals = findcreatures(grid)
 
@@ -530,11 +538,10 @@ def asapgeneration():
         creatures[i][9] = 0
         creatures[i][10] = 0
 
-    threads = []
+    threads = [Thread(target=battleall, args=[i]) for i in range(50)]
 
-    for i in range(50):
-        threads.append(Thread(target=battleall, args=[i]))
-        threads[i].start()
+    for i in threads:
+        i.start()
 
     for t in threads:
         t.join()
@@ -545,6 +552,10 @@ def asapgeneration():
 
     archive.append(creatures)
 
+
+    creatures = [creatures[i] for i in range(50) if random.randint(0,100) <= 2*i]
+
+    '''
     for i in range(50):
         if random.randint(0, 100) <= 2 * i:
             creatures[i].append(1)
@@ -554,6 +565,7 @@ def asapgeneration():
     creatures = [item for item in creatures if item[13] == 1]
 
     creatures = [i[:-1] for i in creatures]
+    '''
 
     gen += 1
     archgen += 1
@@ -568,222 +580,233 @@ def asapgeneration():
     backupcreatures = copy.deepcopy(creatures)
 
 
-while True:
-    event = pygame.event.poll()
-    if event.type == pygame.QUIT:
-        break
+if __name__ == "__main__":
+    while True:
+        event = pygame.event.poll()
+        if event.type == pygame.QUIT:
+            break
 
-    if event.type == pygame.KEYDOWN:
-        key = event.key
+        if event.type == pygame.KEYUP:
+            print("UP", event.key)
+            if event.key == 304:
+                shift = (shift + 1) % 2
 
-        print(key)
+        if event.type == pygame.KEYDOWN:
+            key = event.key
 
-        #TODO BETTER SHIFT
-        if key == 304:
-            mod = -((mod + 32)%64)
+            print(key)
+
+            #TODO BETTER SHIFT
+            if key == 304:
+                shift = (shift+1)%2
 
 
-        if key == 27:
-            grid = [[0 for i in range(16)] for i in range(16)]
-            currentlyinputting = 0
-            gridcreatures = ["No Creature", "No Creature"]
-            inputstring = ""
-            rulestring = [[3],[2,3],0,0]
+            if key == 27:
+                grid = [[0 for i in range(16)] for i in range(16)]
+                currentlyinputting = 0
+                gridcreatures = ["No Creature", "No Creature"]
+                inputstring = ""
+                rulestring = [[3],[2,3],0,0]
 
-        if currentlyinputting == 0:
+            if currentlyinputting == 0:
 
-            if gamemode == 0 and event.key == pygame.K_SPACE:
-                creatures = initialize(50)
-                gamemode = 1
+                if gamemode == 0 and event.key == pygame.K_SPACE:
+                    creatures = initialize(50)
+                    gamemode = 1
 
-            if gamemode == 1:
-                if event.key == pygame.K_LCTRL:
-                    currentlyinputting = 1
+                if gamemode == 1:
+                    if event.key == pygame.K_LCTRL:
+                        currentlyinputting = 1
 
-                if event.key == pygame.K_RCTRL:
-                    currentlyinputting = 2
+                    if event.key == pygame.K_RCTRL:
+                        currentlyinputting = 2
 
-                if event.key == pygame.K_i:
-                    grid = iteration(grid)
+                    if event.key == pygame.K_i:
+                        grid = iteration(grid)
 
-                if event.key == pygame.K_b:
-                    battle(nametocreature(gridcreatures[0]),nametocreature(gridcreatures[1]),2)
+                    if event.key == pygame.K_b:
+                        battle(nametocreature(gridcreatures[0]),nametocreature(gridcreatures[1]),2)
 
-                if event.key == pygame.K_a:
-                    asapgeneration()
+                    if event.key == pygame.K_a:
+                        asapgeneration()
 
-                if event.key == pygame.K_f:
-                    generation(1)
+                    if event.key == pygame.K_f:
+                        generation(1)
 
-                if event.key == pygame.K_s:
-                    generation(2)
+                    if event.key == pygame.K_s:
+                        generation(2)
 
-                if event.key == pygame.K_LEFT:
-                    if archgen != 0:
-                        archgen = archgen - 1
-                        creatures = copy.deepcopy(archive[archgen])
-
-                if event.key == pygame.K_RIGHT:
-                    if archgen != gen:
-                        archgen = archgen + 1
-                        if archgen == gen:
-                            creatures = copy.deepcopy(backupcreatures)
-                        else:
+                    if event.key == pygame.K_LEFT:
+                        if archgen != 0:
+                            archgen = archgen - 1
                             creatures = copy.deepcopy(archive[archgen])
 
-                if event.key == pygame.K_LALT:
-                    currentlyinputting = 3
+                    if event.key == pygame.K_RIGHT:
+                        if archgen != gen:
+                            archgen = archgen + 1
+                            if archgen == gen:
+                                creatures = copy.deepcopy(backupcreatures)
+                            else:
+                                creatures = copy.deepcopy(archive[archgen])
 
-                if event.key == pygame.K_w:
-                    currentlyinputting = 4
+                    if event.key == pygame.K_LALT:
+                        currentlyinputting = 3
 
-                if key in range(48,58):
-                    with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
-                        json.dump([gen,archive,backupcreatures,rulestring],savefile)
-                if key in range(282,291):
-                    with open(str("Save" + str(key - 281) + ".txt"), "r") as savefile:
-                        jsonlist = json.loads(savefile.read())
-                        gen = jsonlist[0]
-                        archgen = jsonlist[0]
-                        archive = jsonlist[1]
-                        backupcreatures = jsonlist[2]
+                    if event.key == pygame.K_w:
+                        currentlyinputting = 4
+
+                    if key in range(48,58):
+                        with open(str("Save" + str(key-48) + ".txt"),"w") as savefile:
+                            json.dump([gen,archive,backupcreatures,rulestring],savefile)
+                    if key in range(282,291):
+                        with open(str("Save" + str(key - 281) + ".txt"), "r") as savefile:
+                            jsonlist = json.loads(savefile.read())
+                            gen = jsonlist[0]
+                            archgen = jsonlist[0]
+                            archive = jsonlist[1]
+                            backupcreatures = jsonlist[2]
+                            creatures = copy.deepcopy(backupcreatures)
+                            rulestring = jsonlist[3]
+                            print(gen,archive,backupcreatures,rulestring)
+
+
+                    if event.key == pygame.K_g:
+                        creatures = sorted(creatures, key=operator.itemgetter(8, 9, 10))
+
+                    if event.key == pygame.K_r:
+                        creatures = sorted(creatures, key=operator.itemgetter(9, 10))
+
+                    if event.key == pygame.K_p:
+                        creatures = sorted(creatures, key=operator.itemgetter(10, 9))
+
+                    if event.key == pygame.K_o:
+                        creatures = sorted(creatures, key=operator.itemgetter(11, 12))
+
+                    if event.key == pygame.K_u:
+                        creatures = sorted(creatures, key=operator.itemgetter(12, 11))
+
+            elif currentlyinputting == 1:
+                if key == 8:
+                    inputstring = inputstring[0:-1]
+
+                elif key == 13 and len(inputstring) < 12:
+                    grid = merge(nametocreature(inputstring),getside(1))
+                    gridcreatures[0] = findname(nametocreature(inputstring))
+                    currentlyinputting = 0
+                    inputstring = ""
+
+
+                elif key <= 127 and len(inputstring) < 11 and chr(key) in b64:
+                    if key in [45,61]:
+                        inputstring = inputstring + chr(key)
+                    else:
+                        inputstring = inputstring + chr(key+(-32*shift))
+
+            elif currentlyinputting == 2:
+
+                if key == 8:
+                    inputstring = inputstring[0:-1]
+
+                elif key == 13 and len(inputstring) < 12:
+                    grid = merge(getside(0),blueify(flip(nametocreature(inputstring))))
+                    gridcreatures[1] = findname(nametocreature(inputstring))
+                    currentlyinputting = 0
+                    inputstring = ""
+
+
+
+                elif key <= 127 and len(inputstring) < 11 and chr(key) in b64:
+
+                    if key in [45, 61]:
+
+                        inputstring = inputstring + chr(key)
+
+                    else:
+
+                        inputstring = inputstring + chr(key + (-32 * shift))
+
+            elif currentlyinputting == 3:
+                if key in range(48, 58):
+                    inputstring = inputstring + str(key-48)
+                if key == 47:
+                    inputstring = inputstring + "/"
+                if key == 8:
+                    inputstring = inputstring[0:-1]
+                if key == 13:
+                    rulestringl = inputstring.split("/")
+                    print(rulestringl)
+                    newstring = [[],[],0,0]
+                    for i in rulestringl[0]:
+                        newstring[0].append(int(i))
+                    for i in rulestringl[1]:
+                        newstring[1].append(int(i))
+                    if rulestringl[2] in ['0','1']:
+                            newstring[2] = int(rulestringl[2])
+                    if rulestringl[3] in ["0","1","2","3"]:
+                            newstring[3] = int(rulestringl[3])
+
+                    newstring[0] = sorted(set(newstring[0]))
+                    newstring[1] = sorted(set(newstring[1]))
+                    print(newstring)
+                    now = datetime.datetime.now()
+                    now = str(now)
+                    now = now.replace(":",";")
+                    if archive != []:
+                        with open(str("Autosave " + now + ".txt"), "w") as savefile:
+                            json.dump([gen, archive, backupcreatures, rulestring], savefile)
+
+                    rulestring = newstring[:]
+                    inputstring = ""
+                    currentlyinputting = 0
+
+            elif currentlyinputting == 4:
+                if key in range(48, 58) and int(inputstring + str(key-48)) <= gen:
+                    inputstring = inputstring + str(key - 48)
+
+
+                if key == 8:
+                    inputstring = inputstring[0:-1]
+
+                if key == 13:
+                    archgen = int(inputstring)
+                    if archgen == gen:
                         creatures = copy.deepcopy(backupcreatures)
-                        rulestring = jsonlist[3]
-                        print(gen,archive,backupcreatures,rulestring)
+                    else:
+                        creatures = copy.deepcopy(archive[archgen])
+                    currentlyinputting = 0
+                    inputstring = ""
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            if gamemode == 1:
+                if pos[0] <= 800 and pos[1] >= 8*800//16 + 65:
+                    #(170*i/10,(65 + 8 * squaresize) + (30*j))
+                    if event.button == 1:
+                        ones = (pos[1] - (65 + 8 * 800//16))//30
+                        tens = pos[0]//170
+                        if 10*tens + ones >= 0:
+                            creaturetoview = raw(copy.deepcopy(creatures[(10*tens + ones)]))
+
+                            nonraw = copy.deepcopy(creatures[(10*tens + ones)])
+
+                            stats = [findname(nonraw),nonraw[8],nonraw[9],nonraw[10],nonraw[11],nonraw[12]]
+
+                            gridcreatures[0] = findname(creaturetoview)
+                            grid = merge(creaturetoview,getside(1))
+
+                    else:
+                        ones = (pos[1] - (65 + 8 * 800//16))//30
+                        tens = pos[0]//170
+                        if 10*tens + ones >= 0:
+                            creaturetoview = raw(copy.deepcopy(creatures[(10*tens + ones)]))
+
+                            nonraw = copy.deepcopy(creatures[(10 * tens + ones)])
+
+                            stats2 = [findname(nonraw), nonraw[8], nonraw[9], nonraw[10], nonraw[11], nonraw[12]]
 
 
-                if event.key == pygame.K_g:
-                    creatures = sorted(creatures, key=operator.itemgetter(8, 9, 10))
+                            gridcreatures[1] = findname(creaturetoview)
+                            grid = merge(getside(0),blueify(flip(creaturetoview)))
 
-                if event.key == pygame.K_r:
-                    creatures = sorted(creatures, key=operator.itemgetter(9, 10))
-
-                if event.key == pygame.K_p:
-                    creatures = sorted(creatures, key=operator.itemgetter(10, 9))
-
-                if event.key == pygame.K_o:
-                    creatures = sorted(creatures, key=operator.itemgetter(11, 12))
-
-                if event.key == pygame.K_u:
-                    creatures = sorted(creatures, key=operator.itemgetter(12, 11))
-
-        elif currentlyinputting == 1:
-            if key == 8:
-                inputstring = inputstring[0:-1]
-
-            elif key == 13 and len(inputstring) < 12:
-                grid = merge(nametocreature(inputstring),getside(1))
-                gridcreatures[0] = findname(nametocreature(inputstring))
-                currentlyinputting = 0
-                inputstring = ""
-
-
-            elif key <= 127 and len(inputstring) < 11 and chr(key) in b64:
-                if key in [45,61]:
-                    mod = 0
-
-                inputstring = inputstring + chr(key+mod)
-
-        elif currentlyinputting == 2:
-
-            if key == 8:
-                inputstring = inputstring[0:-1]
-
-            elif key == 13 and len(inputstring) < 12:
-                grid = merge(getside(0),blueify(flip(nametocreature(inputstring))))
-                gridcreatures[1] = findname(nametocreature(inputstring))
-                currentlyinputting = 0
-                inputstring = ""
-
-
-            elif key <= 127 and len(inputstring) < 11 and chr(key) in b64:
-                if key in [45,61]:
-                    mod = 0
-
-                inputstring = inputstring + chr(key+mod)
-
-        elif currentlyinputting == 3:
-            if key in range(48, 58):
-                inputstring = inputstring + str(key-48)
-            if key == 47:
-                inputstring = inputstring + "/"
-            if key == 8:
-                inputstring = inputstring[0:-1]
-            if key == 13:
-                rulestringl = inputstring.split("/")
-                print(rulestringl)
-                newstring = [[],[],0,0]
-                for i in rulestringl[0]:
-                    newstring[0].append(int(i))
-                for i in rulestringl[1]:
-                    newstring[1].append(int(i))
-                if rulestringl[2] in ['0','1']:
-                        newstring[2] = int(rulestringl[2])
-                if rulestringl[3] in ["0","1","2","3"]:
-                        newstring[3] = int(rulestringl[3])
-
-                newstring[0] = sorted(set(newstring[0]))
-                newstring[1] = sorted(set(newstring[1]))
-                print(newstring)
-                now = datetime.datetime.now()
-                now = str(now)
-                now = now.replace(":",";")
-                if archive != []:
-                    with open(str("Autosave " + now + ".txt"), "w") as savefile:
-                        json.dump([gen, archive, backupcreatures, rulestring], savefile)
-
-                rulestring = newstring[:]
-                inputstring = ""
-                currentlyinputting = 0
-
-        elif currentlyinputting == 4:
-            if key in range(48, 58) and int(inputstring + str(key-48)) <= gen:
-                inputstring = inputstring + str(key - 48)
-
-
-            if key == 8:
-                inputstring = inputstring[0:-1]
-
-            if key == 13:
-                archgen = int(inputstring)
-                if archgen == gen:
-                    creatures = copy.deepcopy(backupcreatures)
-                else:
-                    creatures = copy.deepcopy(archive[archgen])
-                currentlyinputting = 0
-                inputstring = ""
-
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        pos = pygame.mouse.get_pos()
-        if gamemode == 1:
-            if pos[0] <= 800 and pos[1] >= 8*800//16 + 65:
-                #(170*i/10,(65 + 8 * squaresize) + (30*j))
-                if event.button == 1:
-                    ones = (pos[1] - (65 + 8 * 800//16))//30
-                    tens = pos[0]//170
-                    if 10*tens + ones >= 0:
-                        creaturetoview = raw(copy.deepcopy(creatures[(10*tens + ones)]))
-
-                        nonraw = copy.deepcopy(creatures[(10*tens + ones)])
-
-                        stats = [findname(nonraw),nonraw[8],nonraw[9],nonraw[10],nonraw[11],nonraw[12]]
-
-                        gridcreatures[0] = findname(creaturetoview)
-                        grid = merge(creaturetoview,getside(1))
-
-                else:
-                    ones = (pos[1] - (65 + 8 * 800//16))//30
-                    tens = pos[0]//170
-                    if 10*tens + ones >= 0:
-                        creaturetoview = raw(copy.deepcopy(creatures[(10*tens + ones)]))
-
-                        nonraw = copy.deepcopy(creatures[(10 * tens + ones)])
-
-                        stats2 = [findname(nonraw), nonraw[8], nonraw[9], nonraw[10], nonraw[11], nonraw[12]]
-
-
-                        gridcreatures[1] = findname(creaturetoview)
-                        grid = merge(getside(0),blueify(flip(creaturetoview)))
-
-    draw(gamemode)
-    pygame.display.flip()
+        draw(gamemode)
+        pygame.display.flip()
